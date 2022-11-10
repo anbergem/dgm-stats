@@ -106,61 +106,141 @@ all_results = all_results.sort_values("Total")
 all_results = all_results.style.highlight_null(props="color: transparent;").format("{:.0f}")
 all_results
 
-fig = px.line(df_all_summary.cumsum())
-fig.update_layout(
-    title="Cumulative score per week",
-    xaxis=dict(
-        title="Weeks",
-    ),
-    yaxis=dict(
-        title="Cumulative Score (relative)"
-    ),
-    legend=dict(
-        title="Players (>= 5 weeks)"
+
+def player_breakdown(df_all, df_all_summary, players):
+    best_5 = {}
+    for name, weeks in df_all_summary[players].T.iterrows():
+        best = weeks.nsmallest(5)
+        # best.insert(0, "Total", best.sum())
+        best_5[name] = best
+    best_5_df = pd.DataFrame(best_5).T
+    best_5_df.insert(0, "Total", best_5_df.sum(axis=1))
+    best_5_df.columns = ["Total"] + list(range(1, len(best_5_df.columns)))
+    best_5 = best_5_df.sort_values("Total")
+    best_5 = best_5.style.highlight_null(props="color: transparent;").format("{:.0f}")
+    st.write("Top 5 rounds")
+    best_5
+
+    all_results = df_all_summary[players].T
+    all_results.insert(0, "Total", all_results.sum(axis=1))
+    all_results.columns = ["Total"] + list(range(1, len(all_results.columns)))
+    all_results = all_results.sort_values("Total")
+    all_results = all_results.style.highlight_null(props="color: transparent;").format("{:.0f}")
+    st.write("All rounds")
+    all_results
+
+    df = df_all.T.loc[players]
+    st.write("Cumulative sum")
+    st.line_chart(df.T.cumsum())
+
+    st.write("Count of each score across the competition")
+    common_data = pd.DataFrame([series.value_counts() for _, series in df.iterrows()])
+    fig = px.bar(common_data)
+    fig.update_layout(
+        xaxis=dict(
+            title="Players",
+        ),
+        yaxis=dict(
+            title="Count of each score"
+        ),
+        legend=dict(
+            title="Score (relative)"
+        )
     )
-)
-chart = st.plotly_chart(fig)
+    st.plotly_chart(fig)
 
-cumsum = df_all.cumsum()
-fig = px.line(cumsum)
-fig.update_layout(
-    title="Cumulative score per hole",
-    xaxis=dict(
-        title="Weeks",
-    ),
-    yaxis=dict(
-        title="Cumulative Score (relative)"
-    ),
-    legend=dict(
-        title="Players (>= 5 weeks)"
-    )
-)
-chart = st.plotly_chart(fig)
-cumsum
+    # Todo: make dynamic for number of holes
+    number_of_holes = 18
+    data = {player: {i: collections.defaultdict(lambda: 0) for i in range(1, number_of_holes+1)} for player in players}
+    for player, series in df.iterrows():
+        for i, value in enumerate(series.values):
+            if pd.isna(value):
+                continue
+            data[player][i%number_of_holes + 1][value] += 1
+    reform = {(outerKey, innerKey): values for outerKey, innerDict in data.items() for innerKey, values in innerDict.items()}
+    common_data = pd.DataFrame(reform)
 
-df = to_df(data)
+    st.write("Score distributions per hole")
+    for player in players:
+        player_dt = common_data[player]
+        player_dt.index = player_dt.index.astype(int)
+        fig = px.bar(player_dt.sort_index().T)
+        fig.update_layout(
+            xaxis=dict(
+                title="Players",
+                tick0=1,
+                dtick=1,
+            ),
+            yaxis=dict(
+                title="Count"
+            ),
+            legend=dict(
+                title="Score (relative)"
+            ),
+            title=f"{player}"
+        )
+        st.plotly_chart(fig)
 
-st.write("Player results", df)
-st.area_chart(df.T)
+st.write("## Player breakdown")
+players = st.multiselect("Choose players", df_all.columns)
+if players:
+    player_breakdown(df_all, df_all_summary, players)
 
-common_data = pd.DataFrame([series.value_counts() for _, series in df.T.iterrows()])
-
-common_data
-
-st.line_chart(common_data)
-
-fig = px.bar(common_data)
-fig.update_layout(
-    xaxis=dict(
-        title="Holes",
-        tick0=1,
-        dtick=1,
-    ),
-    yaxis=dict(
-        title="Count"
-    ),
-    legend=dict(
-        title="Score (relative)"
-    )
-)
-st.plotly_chart(fig)
+# fig = px.line(df_all_summary.cumsum())
+# fig.update_layout(
+#     title="Cumulative score per week",
+#     xaxis=dict(
+#         title="Weeks",
+#     ),
+#     yaxis=dict(
+#         title="Cumulative Score (relative)"
+#     ),
+#     legend=dict(
+#         title="Players (>= 5 weeks)"
+#     )
+# )
+# chart = st.plotly_chart(fig)
+#
+# cumsum = df_all.cumsum()
+# fig = px.line(cumsum)
+# fig.update_layout(
+#     title="Cumulative score per hole",
+#     xaxis=dict(
+#         title="Weeks",
+#     ),
+#     yaxis=dict(
+#         title="Cumulative Score (relative)"
+#     ),
+#     legend=dict(
+#         title="Players (>= 5 weeks)"
+#     )
+# )
+# chart = st.plotly_chart(fig)
+# cumsum
+#
+# df = to_df(data)
+#
+# st.write("Player results", df)
+# st.area_chart(df.T)
+#
+# common_data = pd.DataFrame([series.value_counts() for _, series in df.T.iterrows()])
+#
+# common_data
+#
+# st.line_chart(common_data)
+#
+# fig = px.bar(common_data)
+# fig.update_layout(
+#     xaxis=dict(
+#         title="Holes",
+#         tick0=1,
+#         dtick=1,
+#     ),
+#     yaxis=dict(
+#         title="Count"
+#     ),
+#     legend=dict(
+#         title="Score (relative)"
+#     )
+# )
+# st.plotly_chart(fig)
