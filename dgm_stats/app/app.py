@@ -106,6 +106,36 @@ all_results = all_results.sort_values("Total")
 all_results = all_results.style.highlight_null(props="color: transparent;").format("{:.0f}")
 all_results
 
+fig = px.line(df_all_summary.cumsum())
+fig.update_layout(
+    title="Cumulative score per week",
+    xaxis=dict(
+        title="Weeks",
+    ),
+    yaxis=dict(
+        title="Cumulative Score (relative)"
+    ),
+    legend=dict(
+        title="Players (>= 5 weeks)"
+    )
+)
+chart = st.plotly_chart(fig)
+
+cumsum = df_all.cumsum()
+fig = px.line(cumsum)
+fig.update_layout(
+    title="Cumulative score per hole",
+    xaxis=dict(
+        title="Weeks",
+    ),
+    yaxis=dict(
+        title="Cumulative Score (relative)"
+    ),
+    legend=dict(
+        title="Players (>= 5 weeks)"
+    )
+)
+chart = st.plotly_chart(fig)
 
 def player_breakdown(df_all, df_all_summary, players):
     best_5 = {}
@@ -186,36 +216,6 @@ players = st.multiselect("Choose players", df_all.columns)
 if players:
     player_breakdown(df_all, df_all_summary, players)
 
-# fig = px.line(df_all_summary.cumsum())
-# fig.update_layout(
-#     title="Cumulative score per week",
-#     xaxis=dict(
-#         title="Weeks",
-#     ),
-#     yaxis=dict(
-#         title="Cumulative Score (relative)"
-#     ),
-#     legend=dict(
-#         title="Players (>= 5 weeks)"
-#     )
-# )
-# chart = st.plotly_chart(fig)
-#
-# cumsum = df_all.cumsum()
-# fig = px.line(cumsum)
-# fig.update_layout(
-#     title="Cumulative score per hole",
-#     xaxis=dict(
-#         title="Weeks",
-#     ),
-#     yaxis=dict(
-#         title="Cumulative Score (relative)"
-#     ),
-#     legend=dict(
-#         title="Players (>= 5 weeks)"
-#     )
-# )
-# chart = st.plotly_chart(fig)
 # cumsum
 #
 # df = to_df(data)
