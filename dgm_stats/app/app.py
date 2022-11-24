@@ -236,6 +236,7 @@ def player_breakdown(df_all, df_all_summary, players):
             name=f"{player} quick rating",
             line_color=colors[i],
         ))
+    for i, (player, ratings) in enumerate(player_ratings.T.iterrows()):
         fig.add_trace(go.Scatter(
             y=ratings.values,
             x=ratings.index,
@@ -308,6 +309,9 @@ def player_breakdown(df_all, df_all_summary, players):
             name=f"{player} - range"
         ))
 
+    for i, (player, player_df) in enumerate(player_dfs.items()):
+        pdf = player_df.T.dropna()
+        x_axis = pdf.T.index + 1
         fig.add_trace(go.Scatter(
             x=x_axis,
             y=pdf.mean(axis=0),
