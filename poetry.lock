@@ -37,6 +37,17 @@ python-versions = ">=3.6"
 tenacity = ">=6.2.0"
 
 [[package]]
+name = "python-dotenv"
+version = "0.21.0"
+description = "Read key-value pairs from a .env file and set them as environment variables"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+cli = ["click (>=5.0)"]
+
+[[package]]
 name = "requests"
 version = "2.28.1"
 description = "Python HTTP for Humans."
@@ -81,13 +92,14 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.4"
-content-hash = "7b3c68d106f6f77ecf78d80fbc742496acfe2bbb7f3c5fbe165f19fb10386079"
+content-hash = "fc57501cf9a3d5ef9bb641341fce3e63d9ccc4dab59ed13ef173ebeff73752ec"
 
 [metadata.files]
 certifi = []
 charset-normalizer = []
 idna = []
 plotly = []
+python-dotenv = []
 requests = []
 tenacity = []
 urllib3 = []

@@ -1,13 +1,18 @@
 import collections
 import logging
+import os
 
 import dgm_stats as ds
 import pandas as pd
 
+import dotenv
+
+dotenv.load_dotenv()
+
 if __name__ == '__main__':
     ds.initialize_logging(logging.DEBUG)
 
-    api = ds.Api("https://discgolfmetrix.com/api.php")
+    api = ds.Api("https://discgolfmetrix.com/api.php", os.environ["DGM_CODE"])
     result = api.get_competition(2064106)
 
     # results = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict)))
