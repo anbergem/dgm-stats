@@ -126,15 +126,6 @@ course = Course.from_data(course_data)
 df_all = fetch_all(data_all)
 df_all_summary = fetch_all_summary(data_all)
 
-with st.sidebar:
-    st.title("Competition")
-    st.text_input("Choose competition", placeholder="Buråsheia Ukesgolf 2022", disabled=True)
-
-    st.title("Player breakdown")
-    players = st.multiselect("Choose players", df_all.columns)
-
-st.write("# Welcome to Disc Golf Metrix Stats!")
-st.write(f"## Here are the results for {data_all['Competition']['Name']}")
 
 
 def something(df):
@@ -148,9 +139,18 @@ def something(df):
     best_5_df.columns = ["Total"] + list(range(1, len(best_5_df.columns)))
     return best_5_df.sort_values("Total")
 
+best_5 = something(df_all_summary)
+
+with st.sidebar:
+    st.title("Competition")
+    st.text_input("Choose competition", placeholder="Buråsheia Ukesgolf 2022", disabled=True)
+    st.title("Player breakdown")
+    players = st.multiselect("Choose players", df_all.columns, default=list(best_5.iloc[:3].index))
+
+st.write("# Welcome to Disc Golf Metrix Stats!")
+st.write(f"## Here are the results for {data_all['Competition']['Name']}")
 
 st.write("### Results, only counting the top 5 rounds")
-best_5 = something(df_all_summary)
 best_5 = best_5.style.highlight_null(props="color: transparent;").format("{:.0f}")
 best_5
 
