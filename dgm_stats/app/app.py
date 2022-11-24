@@ -1,6 +1,7 @@
 import collections
 import dataclasses
 import os
+import typing
 
 import dotenv
 import numpy as np
@@ -118,6 +119,26 @@ def fetch_all_summary(data) -> pd.DataFrame:
     return df.sort_index()
 
 
+@st.cache()
+def fetch_all_summary_per_class(data) -> typing.Dict[str, pd.DataFrame]:
+    user_results = collections.defaultdict(lambda: collections.defaultdict(dict))
+
+    number_of_holes = len(data["Competition"]["Tracks"])
+    for w_i, weekly_competition in enumerate(data["Competition"]["SubCompetitions"]):
+        for s_i, sub_competition in enumerate(weekly_competition["SubCompetitions"]):
+            for u_i, user_result in enumerate(sub_competition["Results"]):
+                if len(user_result["PlayerResults"]) != number_of_holes:
+                    continue
+                user_results[user_result["ClassName"]][user_result["Name"]][f"{w_i:02}"] = user_result["Diff"]
+
+    dfs = {
+        class_name: pd.DataFrame(user_result).dropna(axis=1, thresh=5).sort_index()
+        for class_name, user_result
+        in user_results.items()
+    }
+    return dfs
+
+
 # data = fetch(2064109)
 data_all = fetch_competition(2064106)
 course_data = fetch_course(data_all["Competition"]["CourseID"])
@@ -125,7 +146,7 @@ course = Course.from_data(course_data)
 
 df_all = fetch_all(data_all)
 df_all_summary = fetch_all_summary(data_all)
-
+df_all_summary_per_class = fetch_all_summary_per_class(data_all)
 
 
 def something(df):
@@ -139,6 +160,7 @@ def something(df):
     best_5_df.columns = ["Total"] + list(range(1, len(best_5_df.columns)))
     return best_5_df.sort_values("Total")
 
+
 best_5 = something(df_all_summary)
 
 with st.sidebar:
@@ -150,19 +172,43 @@ with st.sidebar:
 st.write("# Welcome to Disc Golf Metrix Stats!")
 st.write(f"## Here are the results for {data_all['Competition']['Name']}")
 
-st.write("### Results, only counting the top 5 rounds")
-best_5 = best_5.style.highlight_null(props="color: transparent;").format("{:.0f}")
-best_5
+all_results_tab, per_class_tab = st.tabs(["All results", "Per class"])
 
-st.write("### Coming: Per class breakdown")
+with all_results_tab:
+    st.write("### Results, only counting the top 5 rounds")
+    best_5 = best_5.style.highlight_null(props="color: transparent;").format("{:.0f}")
+    st.write(best_5)
 
-st.write("### All results")
-all_results = df_all_summary.T
-all_results.insert(0, "Total", all_results.sum(axis=1))
-all_results.columns = ["Total"] + list(range(1, len(all_results.columns)))
-all_results = all_results.sort_values("Total")
-all_results = all_results.style.highlight_null(props="color: transparent;").format("{:.0f}")
-all_results
+    st.write("### All results")
+    all_results = df_all_summary.T
+    all_results.insert(0, "Total", all_results.sum(axis=1))
+    all_results.columns = ["Total"] + list(range(1, len(all_results.columns)))
+    all_results = all_results.sort_values("Total")
+    all_results = all_results.style.highlight_null(props="color: transparent;").format("{:.0f}")
+    st.write(all_results)
+
+with per_class_tab:
+    st.write("### Per class, only counting the top 5 rounds")
+    st.write("This one is a bit different from Disc Golf Metrix. The score is registered in the class that the player registered. "
+             "Therefore, if a player has entered in multiple classes, each round will appear in the respective class. Results across "
+             "classes are not related.")
+    best_5_per_class = {class_name: something(summary) for class_name, summary in df_all_summary_per_class.items()}
+    best_5_per_class = {key: value for key, value in best_5_per_class.items() if not value.empty}
+    for class_name, best in sorted(best_5_per_class.items(), key=lambda kv: kv[1]["Total"][0]):
+        st.write(f"#### Class {class_name}")
+        st.write(best.style.highlight_null(props="color: transparent;").format("{:.0f}"))
+
+    st.write("### All results")
+    for class_name, class_df in df_all_summary_per_class.items():
+        st.write(class_name)
+        class_results = class_df.T
+        class_results.insert(0, "Total", class_results.sum(axis=1))
+        class_results.columns = ["Total"] + list(range(1, len(class_results.columns)))
+        class_results = class_results.sort_values("Total")
+        class_results = class_results.style.highlight_null(props="color: transparent;").format("{:.0f}")
+        st.write(class_results)
+
+st.write("### Cumulative Scores")
 
 fig = px.line(df_all_summary.cumsum())
 fig.update_layout(
@@ -244,9 +290,9 @@ def player_breakdown(df_all, df_all_summary, players):
             name=f"{player} score",
             opacity=0.25
         ))
-        #st.write(player, rolling_mean)
+        # st.write(player, rolling_mean)
 
-    #fig = px.line(player_ratings)
+    # fig = px.line(player_ratings)
     # fig.add_trace(go.Scatter(y=))
     fig.update_layout(
         yaxis=dict(
